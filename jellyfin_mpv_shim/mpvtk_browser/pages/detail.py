@@ -18,6 +18,7 @@ from ...mpvtk.widgets import Column, Dropdown, Row, Text, VScroll
 from .. import components, theme, timefmt
 from ..components import (chrome, controls, detail as detail_components,
                           media_info)
+from ..scroll_state import ScrollState
 from .base import Page
 
 log = logging.getLogger("mpvtk_browser.pages.detail")
@@ -47,9 +48,68 @@ class DetailPage(Page):
                     "trailers": detail_components.local_trailers(
                         source, srv, item),
                     "extras": detail_components.special_features(
+                        source, srv, item),
+                    "season_episodes": detail_components.season_episodes(
                         source, srv, item)}
 
-        self.route_async(work, lambda d: route.__setitem__("_data", d), epoch)
+        def landed(data):
+            # Before `_data`, not after: the first build that draws the row
+            # is the one the park is read on, and `_data` is what lets that
+            # build happen.
+            try:
+                self._seed_season_scroll(data)
+            except Exception:
+                # A start position is a nicety; losing it must not leave the
+                # page without its data and spinning.
+                log.debug("season scroll seed failed", exc_info=True)
+            route["_data"] = data
+
+        self.route_async(work, landed, epoch)
+
+    def _season_row_id(self, item):
+        """The season carousel's scroll container, which is its ``tile_row``
+        id -- one per episode, not one per page kind.
+
+        **Not a constant, and that is the fix for a bug that shipped once.**
+        Clicking another episode in the row navigates from one detail page to
+        another, and a shared id means the page being left is still the
+        renderer's live scene on the first frame of the new one. The scroll
+        state marks every id the renderer answers for as seen, a restore is
+        only ever applied to an id it has *not* seen, and so the new page's
+        start position was thrown away and its row opened at episode 1 --
+        but only when the row being left was itself scrolled, which is why
+        it came and went. A per-episode id cannot collide with the page it
+        was reached from, and it is stable for the page it belongs to, so a
+        parked position still comes back with it on Back. The same reason the
+        home screen's rows are numbered rather than named.
+        """
+        return "detail-season-%s" % (
+            (item or {}).get("Id") or self.route.get("item_id"))
+
+    def _seed_season_scroll(self, data):
+        """Park the offset that opens the season row on this episode.
+
+        jellyfin-web scrolls that row to the current episode, and a restore
+        is the page's half of the scroll contract (docs/browser-shell.md
+        section 7): the offset travels as a parked one, which the renderer
+        applies once, to a container it has not met. So this is a no-op when
+        anything is already parked for the row -- a visit coming back, or
+        the user's own position -- and an in-place refresh, whose container
+        is already known, cannot yank it back either way.
+
+        Runs on the load worker while the loop thread may be iterating the
+        parked dict, so it replaces the dict rather than adding to it.
+        """
+        route = self.route
+        row_id = self._season_row_id(data.get("item"))
+        if ScrollState.parked(route, row_id) is not None:
+            return
+        offset = detail_components.season_start_offset(
+            self.ctx.art.tiles, data.get("item"),
+            data.get("season_episodes"))
+        if offset > 0:
+            route[ScrollState.PARK_KEY] = dict(
+                route.get(ScrollState.PARK_KEY) or {}, **{row_id: offset})
 
     # -- render ------------------------------------------------------------
 
@@ -114,6 +174,13 @@ class DetailPage(Page):
         scenes = self._scenes_row(item, server)
         if scenes is not None:
             blocks.append(scenes)
+        # Between Scenes and Cast & Crew, where jellyfin-web puts it. An
+        # episode's own row of its siblings: the rest of the season it is in.
+        season = detail_components.season_row(
+            tiles, item, data.get("season_episodes"),
+            self._season_row_id(item))
+        if season is not None:
+            blocks.append(season)
         people = detail_components.people_row(tiles, item.get("People") or [])
         if people is not None:
             blocks.append(people)

@@ -256,6 +256,105 @@ def special_features_row(tiles, items, row_id):
                           image_type=image_type)
 
 
+def season_episodes(source, server, item):
+    """The episodes of the season ``item`` belongs to, for a page's ``work()``.
+
+    Only an episode that names both its series and its season has a season
+    to list: ``SeasonId`` is jellyfin-web's own gate
+    (itemDetails/index.js ``renderMoreFromSeason``), and a bare ``SeasonId``
+    is never guessed at -- an id the server does not recognise is dropped
+    from the query, which would answer with the whole series. A failure
+    costs the row, never the page.
+    """
+    item = item or {}
+    if (item.get("Type") != "Episode" or not item.get("SeriesId")
+            or not item.get("SeasonId")):
+        return []
+    try:
+        return source.get_episodes(
+            server, item["SeriesId"], item["SeasonId"]) or []
+    except Exception:
+        log.debug("season episodes failed", exc_info=True)
+        return []
+
+
+def season_name(item):
+    """The season an episode belongs to, as the "More from ..." heading
+    names it, or None when the DTO does not say.
+
+    The server's own ``SeasonName`` first, so a renamed season keeps its
+    name; the season number only when that is missing.
+    """
+    name = (item or {}).get("SeasonName")
+    if name:
+        return name
+    number = (item or {}).get("ParentIndexNumber")
+    if number is None:
+        return None
+    return _("Specials") if number == 0 else _("Season %d") % number
+
+
+def season_row(tiles, item, episodes, row_id):
+    """The "More from Season" carousel, or None when there is nothing to
+    show.
+
+    Hidden for fewer than two episodes, which is web's rule: a season of one
+    would list only the episode already on screen. Shaped like the season
+    page's own cards -- landscape stills that are each episode's *own*
+    (``inherit=False``, for the reason ``SeasonPage.render`` gives) -- and
+    the default click opens the episode's page, like every other tile.
+    """
+    if season_row_hidden(item, episodes):
+        return None
+    return tiles.tile_row(
+        _("More from %s") % season_name(item), episodes, row_id,
+        geom=_season_geom(tiles, episodes),
+        image_type="Thumb", inherit=False)
+
+
+def _season_geom(tiles, episodes):
+    """The season row's tile geometry. One function, because
+    :func:`season_row` draws with it and :func:`season_start_offset` measures
+    with it, and a row positioned by a different pitch than it is drawn at
+    opens a tile or two off."""
+    return tiles.caption_geom(episodes, tiles.art.geom_wide)
+
+
+def season_start_offset(tiles, item, episodes):
+    """How far to scroll the season row so it opens on ``item``, in logical
+    pixels; 0 when it should open at the start.
+
+    jellyfin-web's rule: the strip is scrolled so the *previous* episode
+    leads (``toStart(card.previousSibling || card)``), which leaves the one
+    on screen second with a neighbour either side. Without it a long season
+    opens at episode 1 and the page you are on is off the end of its own
+    "more from" row.
+
+    Pure arithmetic on the geometry, so it is safe to ask from the load
+    worker; the page parks the answer before the row is first drawn (see
+    ``DetailPage._seed_season_scroll``). Past the end the renderer clamps it
+    to the content.
+    """
+    if season_row_hidden(item, episodes):
+        return 0
+    ids = [(e or {}).get("Id") for e in episodes]
+    try:
+        here = ids.index(item.get("Id"))
+    except ValueError:
+        return 0           # not listed: nothing to line up with
+    if here < 2:
+        return 0           # the start already shows it
+    geom = _season_geom(tiles, episodes)
+    return (here - 1) * (geom.tile_w + geom.gap)
+
+
+def season_row_hidden(item, episodes):
+    """Whether :func:`season_row` draws nothing for this item. Kept as a
+    question of its own so the row and its start offset cannot disagree
+    about it."""
+    return season_name(item) is None or len(episodes or ()) < 2
+
+
 def local_trailers(source, server, item):
     """The item's local trailers for ``work()``, gated on the server's count
     like :func:`special_features`."""

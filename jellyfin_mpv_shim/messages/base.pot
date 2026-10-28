@@ -1223,6 +1223,14 @@ msgstr ""
 msgid "Cast & Crew"
 msgstr ""
 
+#. Heading over the other episodes of the season an episode belongs to, on
+#. that episode's page. %s is the season's name, such as "Season 2" or
+#. "Specials". Jellyfin Web uses the same phrase ("More from {0}").
+#: jellyfin_mpv_shim/mpvtk_browser/components/detail.py
+#, python-format
+msgid "More from %s"
+msgstr ""
+
 #. Button in the Download modal that starts fetching the selected items. An
 #. imperative verb. The modal's own title uses the same English word as a
 #. noun and carries a context to keep the two apart.
@@ -4244,6 +4252,7 @@ msgstr ""
 #. Name of the season holding episodes outside the numbered seasons, such
 #. as Christmas specials. Jellyfin Web uses this word; follow its wording
 #. in this language.
+#: jellyfin_mpv_shim/mpvtk_browser/components/detail.py
 #: jellyfin_mpv_shim/mpvtk_browser/downloads.py
 #: jellyfin_mpv_shim/mpvtk_browser/repository.py
 msgid "Specials"
@@ -6273,6 +6282,7 @@ msgstr ""
 
 #. Stands in for the name of a season the server did not name. %d is its
 #. number.
+#: jellyfin_mpv_shim/mpvtk_browser/components/detail.py
 #: jellyfin_mpv_shim/mpvtk_browser/repository.py
 #, python-format
 msgid "Season %d"
