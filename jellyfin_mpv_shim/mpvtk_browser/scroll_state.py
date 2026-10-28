@@ -36,7 +36,7 @@ class ScrollState:
 
     # -- per-frame ---------------------------------------------------------
 
-    def refresh(self, app, route=None):
+    def refresh(self, app, route=None, on_screen=True):
         """Take the renderer's live offsets. Call once at the top of
         ``build()``.
 
@@ -44,6 +44,13 @@ class ScrollState:
         last frame's numbers against this frame's content. ``route`` is read
         for one thing: the offsets parked on it, which its page is about to
         pass as ``Scroll(offset=…)``. See ``offset`` and ``pending``.
+
+        ``on_screen`` False is a frame built after ``park`` but before the
+        window is given up (the loading screen while playback starts). The
+        renderer still reports the old containers then, but they are about to
+        leave the scene and lose their offsets, so an answer taken now must
+        not count as the restore having happened: it would stop the page
+        restoring on the way back, and the carousel would open at the start.
         """
         self._live = self._read(app)
         # A restore is a one-shot: once the renderer has answered for an id,
@@ -52,7 +59,7 @@ class ScrollState:
         # would last one build, and the frame that matters is a later one.
         # Cleared by `reset()` and by `park()`, never by a repaint; see
         # docs/browser-shell.md section 7.
-        if self._live:
+        if self._live and on_screen:
             self._seeded.update(self._live)
         parked = (route or {}).get(self.PARK_KEY) or {}
         self._pending = {scroll_id: offset

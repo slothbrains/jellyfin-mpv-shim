@@ -446,3 +446,56 @@ class TheStartPositionTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ComingBackFromPlaybackTest(unittest.TestCase):
+    """Play, stop, return: the row is where it was left.
+
+    The loading screen is built after the park and before the window is given
+    up, and the renderer still reports the old containers on that frame. That
+    answer must not count as the restore having happened, or the returning
+    row opens at its start.
+    """
+
+    def play_and_return(self, iid, scrolled=None, frames_between=1):
+        r = SceneRenderer()
+        b = browser(episode(iid), app=r)
+        show(b, r)
+        if scrolled is not None:
+            r.scroll[row_id(iid)] = scrolled
+        b.on_playstate({"stopped": False, "is_audio": False, "id": iid,
+                        "title": "x", "position": 1, "duration": 100})
+        for _ in range(frames_between):
+            show(b, r)                  # the loading screen's frames
+        r.push([])                      # the yield: an empty scene
+        b.enter_browse()
+        nodes, _ = show(b, r)
+        return season_scroll(nodes).get("off0"), r
+
+    def test_the_start_position_comes_back(self):
+        for frames in (0, 1, 3):
+            with self.subTest(frames=frames):
+                off, r = self.play_and_return("e4", frames_between=frames)
+                self.assertTrue(off, "the row came back at episode one")
+                self.assertEqual(r.scroll[row_id("e4")], off)
+
+    def test_the_users_own_scroll_comes_back(self):
+        for frames in (0, 1, 3):
+            with self.subTest(frames=frames):
+                off, _ = self.play_and_return("e4", 77.0, frames)
+                self.assertEqual(off, 77.0)
+
+    def test_a_second_round_trip_holds_too(self):
+        r = SceneRenderer()
+        b = browser(episode("e4"), app=r)
+        show(b, r)
+        r.scroll[row_id("e4")] = 77.0
+        for _ in range(3):
+            b.on_playstate({"stopped": False, "is_audio": False,
+                            "id": "e4", "title": "x", "position": 1,
+                            "duration": 100})
+            show(b, r)
+            r.push([])
+            b.enter_browse()
+            nodes, _ = show(b, r)
+            self.assertEqual(season_scroll(nodes).get("off0"), 77.0)

@@ -3123,7 +3123,7 @@ class MpvtkBrowser(DialogsMixin, LiveTvDialogsMixin, AuthMixin, SettingsMixin,
         # with it for the offsets parked on it — on the frame a screen comes
         # back, those are what its containers are about to be restored to,
         # and so what its window has to be built around.
-        self._scroll.refresh(self.app, self.route)
+        self._scroll.refresh(self.app, self.route, on_screen=self._browsing)
         # Load feedback outranks everything, including the yield to video:
         # that yield is exactly what left a blank window during a load, and a
         # failed start has no video to show through.
