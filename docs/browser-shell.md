@@ -613,6 +613,14 @@ put the container at the bottom, a screenful of holes.
 `tests/test_shell_paging.py:TestAReturningScrollContainerStartsAtTheTop` exists
 to catch exactly that.
 
+**A frame built between the park and the yield must not seed.** Starting playback
+parks, then shows the loading screen for a few frames before the window is given
+up, and the renderer still reports the old containers on those frames. `refresh`
+takes `on_screen=self._browsing` and records `_seeded` only while the browser is
+on screen; otherwise the return found every container already "restored", passed
+no `off0`, and each carousel opened at its start (More from Season came back at
+episode one). `tests/test_more_from_season.py:ComingBackFromPlaybackTest`.
+
 **It refuses to park while the browser is not on screen, and that is not an
 optimisation.** A yielded scene holds no containers, so `scroll_offsets()` answers
 `None` — indistinguishable from mpv being too old to ask — and `park` falls
