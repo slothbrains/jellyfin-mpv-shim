@@ -153,7 +153,12 @@ rather than as errors when you forget:
 - **`ExternalUrls`** is absent from list queries unless asked for (measured on
   10.11 and 12.0). The single-item routes fill it in unconditionally; list
   routes do not.
-- **`PrimaryImageAspectRatio`**, which is what row shape is resolved from.
+- **`PrimaryImageAspectRatio`**, which is what row shape is resolved from, and
+  which decides whether an episode's still fills its card or is drawn whole
+  (`TileRenderer._episode_still_fills`; `docs/artwork-pipeline.md` §3).
+  **`api.get_season` sends no `Fields`**, so the season listing would never carry
+  it: `get_episodes` issues the same request through `api.shows` with the one
+  field named.
 
 And two that arrive without being asked:
 

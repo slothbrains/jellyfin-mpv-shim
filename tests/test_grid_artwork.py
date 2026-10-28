@@ -149,14 +149,14 @@ class SpecTest(unittest.TestCase):
 
 
 class CoverOrContainTest(unittest.TestCase):
-    """**Contain is the default. One pairing covers: a poster into a poster
-    tile.**
+    """**Contain is the default. Two pairings cover: a poster into a poster
+    tile, and an episode's own still into a landscape tile.**
 
     Cropping is only free where the artwork and the tile already agree, and
     the one place they reliably do is 2:3 key art in a 2:3 card. Everywhere
     else the crop is destructive in proportion to the disagreement, and the
     disagreement is per ITEM -- which is why ``auto_geom``'s per-row shape
-    cannot be the whole answer.
+    cannot be the whole answer. The second pairing is :class:`EpisodeStillTest`.
     """
 
     POSTER = TileGeom(tile_w=150, tile_h=225)
@@ -235,6 +235,166 @@ class CoverOrContainTest(unittest.TestCase):
         from jellyfin_mpv_shim.mpvtk_browser.thumbnails import make_key
         self.assertEqual(make_key("i", "Primary", "t", 150, 225),
                          make_key("i", "Primary", "t", 150, 225, fit=""))
+
+
+class EpisodeStillTest(unittest.TestCase):
+    """An episode's own still fills a landscape card instead of sitting in it
+    with bars.
+
+    Stills come in 4:3 and wider-than-16:9 as well as 16:9, and drawn whole
+    in a 16:9 card a row of them has differently barred cards. The rule is
+    narrow on purpose -- every condition is a way of not cropping something
+    that must not be -- so most of these are the cases that must stay whole.
+    """
+
+    WIDE = TileGeom(tile_w=240, tile_h=135)
+    POSTER = TileGeom(tile_w=150, tile_h=225)
+    SQUARE = TileGeom(tile_w=180, tile_h=180)
+
+    @staticmethod
+    def episode(ratio=4 / 3, **over):
+        item = {"Id": "e1", "Type": "Episode", "SeriesId": "sh1"}
+        if ratio is not None:
+            item["PrimaryImageAspectRatio"] = ratio
+        item.update(over)
+        return item
+
+    def contains(self, item, geom=None, resolved="Primary", owner="e1"):
+        from jellyfin_mpv_shim.mpvtk_browser.tile_renderer import TileRenderer
+        return TileRenderer._contains(resolved, geom or self.WIDE, item, owner)
+
+    # -- the ones that fill -------------------------------------------------
+
+    def test_a_four_by_three_still_fills_a_landscape_card(self):
+        self.assertFalse(self.contains(self.episode(4 / 3)))
+
+    def test_an_ultra_wide_still_fills_it_too(self):
+        for ratio in (2.0, 2.35, 2.39):
+            with self.subTest(ratio=ratio):
+                self.assertFalse(self.contains(self.episode(ratio)))
+
+    def test_a_sixteen_by_nine_still_fills_it_as_it_always_looked(self):
+        """Agreeing artwork is the same picture either way."""
+        self.assertFalse(self.contains(self.episode(16 / 9)))
+
+    def test_the_line_is_jellyfin_webs_landscape_cutoff(self):
+        from jellyfin_mpv_shim.mpvtk_browser.tile_renderer import TileRenderer
+        edge = TileRenderer.LANDSCAPE_RATIO
+        self.assertFalse(self.contains(self.episode(edge)))
+        self.assertTrue(self.contains(self.episode(edge - 0.01)))
+
+    # -- the ones that must stay whole --------------------------------------
+
+    def test_a_still_with_no_measured_ratio_is_drawn_whole(self):
+        """Absent is not "probably a still": a recorded episode can carry a
+        poster as its only Primary, and a query that did not ask for the
+        field returns none (docs/jellyfin-api-notes.md section 4)."""
+        self.assertTrue(self.contains(self.episode(None)))
+
+    def test_a_portrait_or_squarish_primary_is_drawn_whole(self):
+        for ratio in (2 / 3, 0.8, 1.0, 1.25):
+            with self.subTest(ratio=round(ratio, 2)):
+                self.assertTrue(self.contains(self.episode(ratio)))
+
+    def test_the_series_poster_borrowed_for_an_episode_is_drawn_whole(self):
+        """``image_spec`` falls back to the series' Primary when the episode
+        has none. The episode's ratio describes ITS picture, not that one,
+        and a 2:3 poster cropped to 16:9 loses most of itself."""
+        self.assertTrue(self.contains(self.episode(16 / 9), owner="sh1"))
+
+    def test_no_owner_means_unverified_and_unverified_is_whole(self):
+        from jellyfin_mpv_shim.mpvtk_browser.tile_renderer import TileRenderer
+        self.assertTrue(TileRenderer._contains(
+            "Primary", self.WIDE, self.episode(16 / 9)))
+
+    def test_only_a_primary_fills(self):
+        """A Thumb or Backdrop the chain resolved to is not what
+        ``PrimaryImageAspectRatio`` measures."""
+        for resolved in ("Thumb", "Backdrop", "Logo", "Banner", "Disc"):
+            with self.subTest(resolved=resolved):
+                self.assertTrue(self.contains(self.episode(4 / 3),
+                                              resolved=resolved))
+
+    def test_only_a_landscape_tile_fills(self):
+        for geom in (self.POSTER, self.SQUARE):
+            with self.subTest(w=geom.tile_w, h=geom.tile_h):
+                self.assertTrue(self.contains(self.episode(16 / 9), geom))
+
+    def test_nothing_that_is_not_an_episode_fills(self):
+        """The rule the home-video test above pins, held for every other
+        type that can be a landscape still: footage is arbitrary and the
+        crop is destructive in proportion."""
+        for kind in ("Video", "Movie", "Program", "MusicVideo", None):
+            with self.subTest(kind=kind):
+                item = self.episode(4 / 3, Type=kind)
+                self.assertTrue(self.contains(item))
+
+    def test_an_unknown_tile_shape_is_still_the_safe_answer(self):
+        from jellyfin_mpv_shim.mpvtk_browser.tile_renderer import TileRenderer
+        self.assertTrue(TileRenderer._contains(
+            "Primary", None, self.episode(16 / 9), "e1"))
+
+    # -- the wiring ---------------------------------------------------------
+
+    def asked(self, item, owner="e1", geom=None):
+        """What ``poster_for`` asks the server and the store for."""
+        import types
+        from jellyfin_mpv_shim.mpvtk_browser.tile_renderer import TileRenderer
+
+        asked = {}
+
+        class _Thumbs:
+            def get_cached(self, key):
+                return None
+
+            def is_gone(self, key):
+                return False
+
+            def request(self, key, url, box, callback, cover=False):
+                asked["key"], asked["cover"] = key, bool(cover)
+
+        class _Source:
+            def image_spec(self, it, image_type, width, inherit=True):
+                return owner, "Primary", "tag"
+
+            def image_url(self, server, item_id, itype, itag, w, h=None,
+                          fill=False):
+                asked["fill"] = fill
+                return "http://s/art"
+
+        art = types.SimpleNamespace(source=_Source(), server=object(),
+                                    thumbs=_Thumbs())
+        _img, key, contain = TileRenderer(art, None).poster_for(
+            item, geom or self.WIDE, "Thumb", inherit=False)
+        asked["contain"], asked["returned_key"] = contain, key
+        return asked
+
+    def test_a_filling_still_asks_the_server_and_the_decode_to_fill(self):
+        a = self.asked(self.episode(4 / 3))
+        self.assertFalse(a["contain"])
+        self.assertTrue(a["fill"])
+        self.assertTrue(a["cover"])
+
+    def test_a_still_drawn_whole_asks_for_neither(self):
+        a = self.asked(self.episode(None))
+        self.assertTrue(a["contain"])
+        self.assertFalse(a["fill"])
+        self.assertFalse(a["cover"])
+
+    def test_the_two_pictures_are_cached_apart(self):
+        """Fit and fill are different pictures of one source. A still that
+        was cached whole before this must not be served in place of the
+        filled one."""
+        filled = self.asked(self.episode(4 / 3))["returned_key"]
+        whole = self.asked(self.episode(None))["returned_key"]
+        self.assertNotEqual(filled, whole)
+
+    def test_the_request_and_the_decode_agree_for_every_ratio(self):
+        for ratio in (None, 0.67, 1.0, 1.25, 4 / 3, 16 / 9, 2.39):
+            with self.subTest(ratio=ratio):
+                a = self.asked(self.episode(ratio))
+                self.assertEqual(a["fill"], a["cover"])
+                self.assertEqual(a["fill"], not a["contain"])
 
 
 class CoverDecodeTest(unittest.TestCase):

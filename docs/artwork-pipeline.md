@@ -141,9 +141,9 @@ image's `info`. The compositors never scan pixels.
 
 ## 3. Tile shape
 
-### Contain is the default; one pairing covers
+### Contain is the default; two pairings cover
 
-The one is a **poster going into a poster tile**. There, cropping is free — a few
+The first is a **poster going into a poster tile**. There, cropping is free — a few
 percent off the edge of a 2:3 key art loses nothing and the grid comes out
 perfectly uniform, which is most of what a wall of posters is for — and the two are
 close enough that a contain would only add thin bars.
@@ -167,6 +167,37 @@ The per-row shape decision cannot fix any of that, because the mismatch is per
 This is nearly free where it changes nothing: when the artwork and the tile already
 agree, contain and cover produce the same picture. It only diverges where cover was
 destroying something.
+
+The second pairing is an **episode's own still going into a landscape tile**. Stills
+are whatever the scraper or the encoder produced — 4:3 from older broadcasts, wider
+than 16:9 from scope releases — and drawn whole in a 16:9 card a row of them is a row
+of differently barred cards: pillars on one, a letterbox on the next. A still is a
+frame of the programme with its subject near the middle, which is the one kind of
+artwork where a centred crop is cheap, so `TileRenderer._episode_still_fills` fills
+it. A 4:3 still loses an eighth off the top and the bottom; a 2.39:1 one loses about
+an eighth off each side.
+
+Every condition in that rule is a way of *not* cropping something that must not be,
+and each is pinned by its own test (`tests/test_grid_artwork.py:EpisodeStillTest`):
+
+- **The item's own picture.** `image_spec` borrows the series' poster when an episode
+  has no Primary, and the episode's ratio says nothing about that one.
+- **A measured landscape ratio** (`PrimaryImageAspectRatio >= LANDSCAPE_RATIO`, the
+  same 1.33 line `auto_geom` uses). Absent is *not* read as "probably a still": a
+  recorded episode can carry a poster as its only Primary, and the field is absent
+  from any query that did not ask for it (`docs/jellyfin-api-notes.md` §4). So an
+  unmeasured, portrait or squarish still keeps the old contain.
+- **A Primary**, because that is what the ratio measures, and **a landscape tile**, so
+  a poster grid of episodes is untouched.
+- **An Episode.** A Home Video is arbitrary footage and a crop is destructive in
+  proportion; nothing about that changed.
+
+The season listing is the one episode query that sent no `Fields`, which is why
+`get_episodes` now names `PrimaryImageAspectRatio`: without it the screen where stills
+matter most would never have filled anything and nothing would have said why.
+
+Fill and fit are cached apart (`fit="fit"` in the key), so stills cached whole before
+this change are re-requested filled rather than served in their old shape.
 
 ### Row shape follows the artwork, per row
 

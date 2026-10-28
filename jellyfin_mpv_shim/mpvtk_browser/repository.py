@@ -2561,8 +2561,27 @@ class LibrarySource:
         return result.get("Items", [])
 
     def get_episodes(self, server_uuid, series_id, season_id):
+        """One season's episodes, gaps included -- the screen's listing.
+
+        **``PrimaryImageAspectRatio`` is asked for by name**, which is the
+        whole reason this is not ``api.get_season``: that helper sends no
+        ``Fields`` and the server then omits the ratio (docs/jellyfin-api-
+        notes.md section 4). An episode's still is filled into its card only
+        when that ratio says it is landscape (``TileRenderer._contains``), so
+        without it this screen -- the one place stills are the whole point --
+        would never fill anything and nothing would say why.
+
+        Otherwise the same request ``get_season`` makes, deliberately
+        unfiltered: the listing shows missing and unaired episodes so the gaps
+        are visible, and only :meth:`get_season_queue` refuses them. Issued
+        through ``api.shows`` for the reason that method gives.
+        """
         api = self._conn(server_uuid).api
-        result = api.get_season(series_id, season_id) or {}
+        result = api.shows("/%s/Episodes" % series_id, params={
+            "UserId": "{UserId}",
+            "SeasonId": season_id,
+            "Fields": "PrimaryImageAspectRatio",
+        }) or {}
         return result.get("Items", [])
 
     def get_item(self, server_uuid, item_id):

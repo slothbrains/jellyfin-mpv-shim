@@ -528,7 +528,7 @@ class TileRenderer:
 
         ``cover`` says the box will be FILLED rather than fitted, so the
         decode crops to its shape instead of contain-ing inside it. Only the
-        one pairing ``_contains`` covers passes it; see there and
+        pairings ``_contains`` covers pass it; see there and
         ``thumbnails._fit_into``.
 
         Read *through* the store's cache rather than keeping a copy: it is the
@@ -581,28 +581,72 @@ class TileRenderer:
             time.time() + self.IMG_RETRY_BACKOFF * (2 ** (attempts - 1)))
         self._requested.discard(key)
     @classmethod
-    def _contains(cls, resolved, geom, item=None):
+    def _contains(cls, resolved, geom, item=None, item_id=None):
         """Whether this artwork must be drawn WHOLE rather than filling the
-        tile. **Contain is the default; one pairing covers.**
+        tile. **Contain is the default; two pairings cover.**
 
-        The one is a POSTER GOING INTO A POSTER TILE, where a crop costs a few
-        percent off 2:3 key art and buys a perfectly uniform grid. Everywhere
-        else the tile and the artwork can disagree by a lot -- a Home Videos
-        library, one film in a row of episodes, a wordmark with no frame it
-        was cut for -- and a crop is destructive in proportion.
+        The first is a POSTER GOING INTO A POSTER TILE, where a crop costs a
+        few percent off 2:3 key art and buys a perfectly uniform grid. The
+        second is an EPISODE'S OWN STILL GOING INTO A LANDSCAPE TILE (see
+        :meth:`_episode_still_fills`): stills come in 4:3 and ultra-wide as
+        well as 16:9, and a row of them contained is a row of differently
+        barred cards. Everywhere else the tile and the artwork can disagree
+        by a lot -- a Home Videos library, one film in a row of episodes, a
+        wordmark with no frame it was cut for -- and a crop is destructive in
+        proportion.
 
         The per-row shape decision cannot fix that, because the mismatch is
         per ITEM; this is the half that can. Nearly free where it changes
         nothing: agreeing artwork gives the same picture either way.
+
+        ``item_id`` is whose picture ``resolved`` is, as ``image_spec``
+        returned it: the item's own, or one borrowed from its series.
         See docs/artwork-pipeline.md section 3.
         """
         if geom is None:
             return True                      # unknown shape: the safe answer
+        tile_ratio = geom.tile_w / float(geom.tile_h or 1)
+        if cls._episode_still_fills(resolved, tile_ratio, item, item_id):
+            return False
         if resolved != "Primary":
             return True                      # Thumb, Backdrop, Logo, Banner…
-        if not cls._poster_shaped(geom.tile_w / float(geom.tile_h or 1)):
+        if not cls._poster_shaped(tile_ratio):
             return True
         return not cls._poster_shaped(cls._item_ratio(item))
+
+    @classmethod
+    def _episode_still_fills(cls, resolved, tile_ratio, item, item_id):
+        """An episode's own still, landscape in a landscape tile: fill it.
+
+        Stills are whatever the scraper or the encoder produced -- 4:3 from
+        older broadcasts, wider than 16:9 from scope releases -- and drawn
+        whole in a 16:9 card they leave bars of different sizes down the
+        sides or across the top, so no two cards in a row match. A still is a
+        frame of the programme with its subject near the middle, which is the
+        one kind of artwork where a centred crop is cheap.
+
+        **Every condition here is a way of not cropping something that must
+        not be:**
+
+        * the item's *own* picture -- the series' poster, borrowed when the
+          episode has none, is 2:3 and would lose its top and bottom;
+        * a *measured* landscape ratio. An absent ``PrimaryImageAspectRatio``
+          is not read as "probably a still": a recorded episode can carry a
+          poster as its only Primary, and the field is absent whenever a
+          query did not ask for it (docs/jellyfin-api-notes.md section 4),
+          so the answer to "unknown" is the old behaviour. A portrait or
+          squarish still (under :attr:`LANDSCAPE_RATIO`, jellyfin-web's own
+          line between landscape and the rest) is drawn whole as well;
+        * a landscape *tile*, so a poster grid of episodes is untouched.
+        """
+        if (item or {}).get("Type") != "Episode" or resolved != "Primary":
+            return False
+        if item_id is None or item_id != item.get("Id"):
+            return False
+        if tile_ratio < cls.LANDSCAPE_RATIO:
+            return False
+        ratio = cls._item_ratio(item)
+        return ratio is not None and ratio >= cls.LANDSCAPE_RATIO
 
     @classmethod
     def _poster_shaped(cls, ratio):
@@ -656,7 +700,7 @@ class TileRenderer:
         if not spec or self.art.server is None:
             return None, "", True
         item_id, itype, itag = spec
-        contain = self._contains(itype, geom, item)
+        contain = self._contains(itype, geom, item, item_id)
         # In the key as well as in the request: fill and fit are two different
         # pictures of one source at one size, and the store caches them to
         # disk.

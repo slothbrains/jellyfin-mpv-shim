@@ -528,6 +528,23 @@ class TheCrossSeasonQueueTest(unittest.TestCase):
         self.assertNotIn("IsMissing", params)
         self.assertNotIn("IsVirtualUnaired", params)
 
+    def test_the_season_listing_asks_for_the_aspect_ratio(self):
+        """``api.get_season`` sends no ``Fields`` and the server then omits
+        ``PrimaryImageAspectRatio``, which is what decides whether an
+        episode's still fills its card. Without it the season screen -- the
+        one place stills are the whole point -- would never fill anything,
+        and nothing would say why (docs/jellyfin-api-notes.md section 4)."""
+        repo, api = self._repo()
+
+        repo.get_episodes("s1", "sh1", "se1")
+
+        path, params = api.calls[-1]
+        self.assertEqual("/sh1/Episodes", path)
+        self.assertEqual("se1", params.get("SeasonId"))
+        self.assertEqual("{UserId}", params.get("UserId"))
+        self.assertIn("PrimaryImageAspectRatio",
+                      (params.get("Fields") or "").split(","))
+
 
 if __name__ == "__main__":
     unittest.main()
