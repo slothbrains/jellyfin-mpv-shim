@@ -18,9 +18,10 @@ from .comic import ComicPage
 from .detail import DetailPage
 from .favorites import FavoritesPage
 from .genres import GenresPage
-from .grid import GridPage, ListPage, PersonPage
+from .grid import GridPage, ListPage
 from .music import MusicLibraryPage
 from .music_detail import AlbumPage, ArtistPage, MusicGenrePage
+from .person import PersonPage
 from .playlist import PlaylistPage
 from .queue_edit import PlaylistEditPage, QueuePage
 from .reader import ReaderPage

@@ -1217,6 +1217,57 @@ msgstr ""
 msgid "Select your media in Jellyfin and play it here."
 msgstr ""
 
+#. Line under an actor's name on their page: when they were born. {date}
+#. is the date as written by the "date of birth or death" message.
+#: jellyfin_mpv_shim/mpvtk_browser/components/detail.py
+#, python-brace-format
+msgid "Born: {date}"
+msgstr ""
+
+#. Line under an actor's name on their page: when they were born and how
+#. old they are now. {date} is the birth date, {age} a whole number of
+#. years.
+#: jellyfin_mpv_shim/mpvtk_browser/components/detail.py
+#, python-brace-format
+msgid "Born: {date} ({age} years old)"
+msgstr ""
+
+#. Line under an actor's name on their page: when they died. {date} is the
+#. date as written by the "date of birth or death" message.
+#: jellyfin_mpv_shim/mpvtk_browser/components/detail.py
+#, python-brace-format
+msgid "Died: {date}"
+msgstr ""
+
+#. Line under an actor's name on their page: when they died and how old they
+#. were. {date} is the death date, {age} a whole number of years.
+#: jellyfin_mpv_shim/mpvtk_browser/components/detail.py
+#, python-brace-format
+msgid "Died: {date} ({age} years old)"
+msgstr ""
+
+#. Line under an actor's name on their page: where they were born. {place}
+#. is a place name such as "Cayey, Puerto Rico", exactly as the server has it.
+#: jellyfin_mpv_shim/mpvtk_browser/components/detail.py
+#, python-brace-format
+msgid "Birth place: {place}"
+msgstr ""
+
+#. A birth or death date on an actor's page, such as 8/28/1956. {month},
+#. {day} and {year} are numbers; reorder them and change the separator to
+#. the way the language writes a short date.
+#: jellyfin_mpv_shim/mpvtk_browser/components/detail.py
+#, python-brace-format
+msgctxt "date of birth or death"
+msgid "{month}/{day}/{year}"
+msgstr ""
+
+#. Shown on an actor's page when the server lists no movies or shows they
+#. appeared in.
+#: jellyfin_mpv_shim/mpvtk_browser/pages/person.py
+msgid "No movies or shows found."
+msgstr ""
+
 #. Heading over the actors and film-makers on an item's page. Jellyfin Web
 #. uses the same phrase.
 #: jellyfin_mpv_shim/mpvtk_browser/components/detail.py
@@ -5080,6 +5131,7 @@ msgstr ""
 #. Checkbox in Guide Settings, colour coding film programmes. Also a
 #. Jellyfin library kind.
 #: jellyfin_mpv_shim/mpvtk_browser/live_tv.py
+#: jellyfin_mpv_shim/mpvtk_browser/pages/person.py
 #: jellyfin_mpv_shim/mpvtk_browser/pages/search.py
 #: jellyfin_mpv_shim/mpvtk_browser/repository.py
 msgid "Movies"
@@ -6120,6 +6172,7 @@ msgstr ""
 
 #. Name of a search-results and library group holding television series.
 #. Plural noun.
+#: jellyfin_mpv_shim/mpvtk_browser/pages/person.py
 #: jellyfin_mpv_shim/mpvtk_browser/pages/search.py
 #: jellyfin_mpv_shim/mpvtk_browser/repository.py
 msgid "Shows"

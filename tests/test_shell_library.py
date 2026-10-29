@@ -697,6 +697,26 @@ class TestTileShapes(unittest.TestCase):
         self.assertNotIn("rpt", left)
         self.assertTrue(right.get("rpt"))
 
+    def test_page_buttons_are_clickable_but_never_a_key_stop(self):
+        """Nav mode drops the page buttons (_page_state), so an arrow key
+        that landed on one lost focus on the very next frame -- DOWN from
+        the top bar did exactly that on the Windows e2e run. Both modes,
+        both directions, the live one included."""
+        for name in ("default", "nebula"):
+            theme.apply(name)
+            try:
+                self.b.route["_data"] = {"libraries": [
+                    dict(self.b.source.libraries[0], Id="lib%d" % i)
+                    for i in range(30)], "rows": []}
+                nodes, handlers = build_scene(self.b)
+                by_id = {n["id"]: n for n in nodes}
+                for nid in ("row-libs-pl", "row-libs-pr"):
+                    with self.subTest(theme=name, node=nid):
+                        self.assertTrue(by_id[nid].get("nnav"))
+                        self.assertIn("click", handlers[nid])
+            finally:
+                theme.apply("default")
+
     def test_the_disabled_state_follows_the_row_as_it_is_paged(self):
         """The row's scroll lives entirely in the renderer, which only reports
         back when the container asks to be watched. Without that watch the
@@ -1327,7 +1347,7 @@ class TestDetailActions(unittest.TestCase):
         self.b._open_item({"Id": "pp1", "Name": "Actor", "Type": "Actor"})
         self.assertEqual(self.b.route["kind"], "person")
         nodes, _h = build_scene(self.b)
-        self.assertIn("img", types(nodes))   # person filmography grid
+        self.assertIn("person-movies", ids(nodes))
 
     def test_cast_tiles_are_portrait_like_every_other_poster(self):
         """Jellyfin serves person Primary images at 2:3. A square tile
@@ -1348,81 +1368,6 @@ class TestDetailActions(unittest.TestCase):
         # caption is added, so "is it portrait" cannot tell them apart.
         self.assertEqual(tile("detail-people"), tile("detail-similar"),
                          "cast tiles are not the same shape as posters")
-
-    def test_a_filmography_can_be_sorted(self):
-        """The filter bar is gated on kind == "grid" and person routes are
-        "person", so a filmography had no ordering control at all — always
-        by name, however long the credit list."""
-        self.b._open_item({"Id": "pp1", "Name": "Actor", "Type": "Actor"})
-        _nodes, h = build_scene(self.b)
-        self.assertIn("person-sort", h, "no sort control on a filmography")
-
-        from jellyfin_mpv_shim.mpvtk_browser.views import SORTS
-        want = next(i for i, s in enumerate(SORTS) if s[1] == "PremiereDate")
-        h["person-sort"]["select"](want, SORTS[want][0])
-        self.assertEqual(self.b.source.person_sorts[-1],
-                         ("PremiereDate", "Descending"))
-
-    def test_a_filmography_defaults_to_name(self):
-        self.b._open_item({"Id": "pp1", "Name": "Actor", "Type": "Actor"})
-        self.assertEqual(self.b.source.person_sorts[-1],
-                         ("SortName", "Ascending"))
-
-    def test_the_filmography_sort_survives_paging(self):
-        """The sort was read in _on_grid_scroll and then not passed to
-        get_person_items, so page 1 honoured the dropdown and every page
-        after it reverted to SortName — the two orderings interleave into
-        duplicates and skips."""
-        self.b._open_item({"Id": "pp1", "Name": "Actor", "Type": "Actor"})
-        _nodes, h = build_scene(self.b)
-        from jellyfin_mpv_shim.mpvtk_browser.views import SORTS
-        want = next(i for i, s in enumerate(SORTS) if s[1] == "PremiereDate")
-        h["person-sort"]["select"](want, SORTS[want][0])
-
-        self.b.route["_total"] = 500          # more to page in
-        grid_scroll(self.b, self.b.route, 100000, 100001)
-        self.assertEqual(self.b.source.person_sorts[-1],
-                         ("PremiereDate", "Descending"),
-                         "page 2 reverted to the default sort")
-
-    def test_a_random_filmography_is_capped_to_one_page(self):
-        """Random reshuffles per request, so paging it yields duplicates and
-        skips. The grid caps for exactly this reason; the person route
-        assigned the raw total and had the corruption the cap prevents."""
-        # The server reports far more than it returned in this page — that
-        # gap is what the pager uses to decide there is more to fetch, and
-        # what the cap has to close.
-        self.b.source.get_person_items = (
-            lambda srv, pid, start_index=0, **kw:
-            ([{"Id": "pf%d" % i, "Name": "F%d" % i, "Type": "Movie"}
-              for i in range(20)], 500))
-
-        self.b._open_item({"Id": "pp1", "Name": "Actor", "Type": "Actor"})
-        _nodes, h = build_scene(self.b)
-        from jellyfin_mpv_shim.mpvtk_browser.views import SORTS
-        rnd = next(i for i, s in enumerate(SORTS) if s[1] == "Random")
-        h["person-sort"]["select"](rnd, SORTS[rnd][0])
-        route = self.b.route
-        self.assertEqual(route["_total"], len(route["_items"]),
-                         "a Random filmography still advertises more pages")
-
-    def test_a_non_random_filmography_still_pages(self):
-        """The cap must be Random-only — capping everything would silently
-        truncate every long credit list at one page."""
-        self.b.source.get_person_items = (
-            lambda srv, pid, start_index=0, **kw:
-            ([{"Id": "pf%d" % i, "Name": "F%d" % i, "Type": "Movie"}
-              for i in range(20)], 500))
-        self.b._open_item({"Id": "pp1", "Name": "Actor", "Type": "Actor"})
-        self.assertEqual(self.b.route["_total"], 500)
-
-    def test_a_filmography_has_no_genre_or_year_filters(self):
-        """They would be filtering one person's credits by genre, and the
-        A-Z strip is meaningless over four films."""
-        self.b._open_item({"Id": "pp1", "Name": "Actor", "Type": "Actor"})
-        nodes, _h = build_scene(self.b)
-        for nid in ("grid-genre", "grid-year", "grid-l-A"):
-            self.assertNotIn(nid, ids(nodes))
 
     def test_episode_play_queues_season(self):
         ep = {"Id": "e1", "Type": "Episode", "SeriesId": "sh1"}

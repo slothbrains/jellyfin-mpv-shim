@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-10-24 02:13-0400\n"
-"PO-Revision-Date: 2026-10-26 23:11+0000\n"
+"PO-Revision-Date: 2026-10-29 10:59+0000\n"
 "Last-Translator: Vitalijus <vitalijus.n@gmail.com>\n"
 "Language-Team: Lithuanian <https://translate.jellyfin.org/projects/jellyfin/"
 "jellyfin-mpv-shim/lt/>\n"
@@ -501,7 +501,7 @@ msgstr "Jokio transkodavimo"
 #. offer.
 #: jellyfin_mpv_shim/menu.py jellyfin_mpv_shim/osc_bridge.py
 msgid "Maximum"
-msgstr "Maksimalus"
+msgstr "Didžiausia"
 
 #. Title of the in-player submenu that sets audio and subtitle tracks for
 #. every episode of the series at once.
@@ -811,7 +811,7 @@ msgstr "Ankstesnis puslapis"
 #: jellyfin_mpv_shim/mpvtk_browser/pages/comic.py
 #: jellyfin_mpv_shim/mpvtk_browser/pages/reader.py
 msgid "Next page"
-msgstr "Sekantis puslapis"
+msgstr "Kitas puslapis"
 
 #. Tooltip of the paging button that jumps to the last page of a library
 #. grid.
@@ -3939,7 +3939,7 @@ msgstr "Diskas"
 #: jellyfin_mpv_shim/mpvtk_browser/dialogs.py
 #: jellyfin_mpv_shim/mpvtk_browser/settings/home.py
 msgid "Artwork"
-msgstr "Meno kūrinys"
+msgstr "Iliustracija"
 
 #. Explanation under the Artwork dropdown in a library's View settings.
 #. "Auto" and "Poster" are two of that dropdown's choices; keep them
@@ -4380,7 +4380,7 @@ msgstr "Toliau"
 #. in the Home Screen settings. Jellyfin Web uses the same phrase.
 #: jellyfin_mpv_shim/mpvtk_browser/home_sections.py
 msgid "Recently Added"
-msgstr "Neseniai pridėta"
+msgstr "Neseniai pridėti"
 
 #. Heading over the Live TV programmes being recorded at this moment. Used
 #. on the Recordings tab and as a home-screen row.
@@ -4622,7 +4622,7 @@ msgstr ""
 #: jellyfin_mpv_shim/mpvtk_browser/hud.py
 #: jellyfin_mpv_shim/mpvtk_browser/music.py
 msgid "Next chapter"
-msgstr "Sekantis skyrius"
+msgstr "Kitas skyrius"
 
 #. Tooltip of the button that goes forward one: the next item in the queue
 #. on the playback controls and the now-playing bar, and the next batch on
@@ -4631,7 +4631,7 @@ msgstr "Sekantis skyrius"
 #: jellyfin_mpv_shim/mpvtk_browser/music.py
 #: jellyfin_mpv_shim/mpvtk_browser/tile_renderer.py
 msgid "Next"
-msgstr "Sekantis"
+msgstr "Kitas"
 
 #. Shown beside the seek bar: the clock time this video will finish at. {0}
 #. is a time of day, already formatted.
@@ -5190,7 +5190,7 @@ msgstr "Paleisti"
 #. imperative verb.
 #: jellyfin_mpv_shim/mpvtk_browser/music.py
 msgid "Pause"
-msgstr "Pauzė"
+msgstr "Pristabdyti"
 
 #. Tooltip of the fast-forward button on the now-playing bar. %d is how
 #. many seconds it jumps.
@@ -5659,7 +5659,7 @@ msgstr "Vėliau"
 #. Tooltip of the button that moves the Live TV guide forward one day.
 #: jellyfin_mpv_shim/mpvtk_browser/pages/livetv.py
 msgid "Next Day"
-msgstr "Sekanti diena"
+msgstr "Kita diena"
 
 #. Button that jumps the Live TV guide back to the current time. An adverb.
 #: jellyfin_mpv_shim/mpvtk_browser/pages/livetv.py
@@ -6186,7 +6186,7 @@ msgstr ""
 #: jellyfin_mpv_shim/mpvtk_browser/repository.py
 #, python-brace-format
 msgid "Recently Added in {0}"
-msgstr "Neseniai pridėta į {0}"
+msgstr "Neseniai pridėti į {0}"
 
 #. Heading of a Live TV row listing episodes airing soon.
 #: jellyfin_mpv_shim/mpvtk_browser/repository.py
@@ -6841,7 +6841,7 @@ msgstr "Paleisti nuo pradžių"
 #. now. An imperative verb phrase.
 #: jellyfin_mpv_shim/mpvtk_browser/tiles.py
 msgid "Play next"
-msgstr "Paleisti sekantį"
+msgstr "Paleisti kitą"
 
 #. Action on an item's menu that tells the server it has not been watched.
 #. An imperative verb phrase.
@@ -6942,7 +6942,7 @@ msgstr "Atstatyti"
 #. Tooltip of the window button that fills the screen with the window.
 #: jellyfin_mpv_shim/mpvtk_browser/window_chrome.py
 msgid "Maximize"
-msgstr "Maksimaliai padidinti"
+msgstr "Maksimizuoti"
 
 #. Tooltip of the grip in the window's bottom corner that drags the window
 #. larger or smaller. A verb.

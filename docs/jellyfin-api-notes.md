@@ -159,6 +159,13 @@ rather than as errors when you forget:
   **`api.get_season` sends no `Fields`**, so the season listing would never carry
   it: `get_episodes` issues the same request through `api.shows` with the one
   field named.
+- **`ProductionLocations`** is the one a person's page needs and the detail
+  query does not name: for a Person it is the **birth place**, and the DTO
+  builder emits it only when `ItemFields.ProductionLocations` is requested
+  (`DtoService.cs`). `PremiereDate` (born) and `EndDate` (died) are not gated.
+  `LibrarySource.get_person` asks for `PERSON_FIELDS`; jellyfin-web shows only
+  the first entry.
+- **`PrimaryImageAspectRatio`**, which is what row shape is resolved from.
 
 And two that arrive without being asked:
 

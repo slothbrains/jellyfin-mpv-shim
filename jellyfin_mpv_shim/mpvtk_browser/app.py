@@ -191,7 +191,7 @@ class MpvtkBrowser(DialogsMixin, LiveTvDialogsMixin, AuthMixin, SettingsMixin,
     # on, whether or not this set names it. Leaving it out did not make the
     # Networks screen or a "see all" listing scroll; it drew one page of
     # tiles and no bar to leave it with, which is #638 and #639.
-    PAGEABLE_KINDS = {"grid", "list", "person", "music"}
+    PAGEABLE_KINDS = {"grid", "list", "music"}
 
     # How long shutdown() waits for a long job (a download-store move) to
     # finish before giving up on it. Long enough to cover a same-drive move,

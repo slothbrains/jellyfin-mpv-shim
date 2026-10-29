@@ -822,7 +822,7 @@ nearest thing to a tab strip.
 ## 13. Paging a result set
 
 `Paginator` (`jellyfin_mpv_shim/mpvtk_browser/pagination.py`) pages a result set
-too large to hold. Four routes use it — grid, person, music, music_genre — in
+too large to hold. Three routes use it — grid, music, music_genre — in
 three modes that share the machinery.
 
 **Windowed** (`window`) is what a library grid does: the list is `_total`

@@ -407,17 +407,15 @@ class TestGridWindowing(unittest.TestCase):
 
     def test_every_windowed_route_is_sized_from_its_total(self):
         """GridPage is not the only route that inherits the windowing
-        render. ListPage (Favorites, genre listings, Next Up, studios) and
-        PersonPage set _items unpadded while _total said otherwise, so the
+        render. ListPage (Favorites, genre listings, Next Up, studios) set
+        _items unpadded while _total said otherwise, so the
         scroller jumped the moment a window landed -- #617's own symptom, on
         the routes the fix was supposed to cover."""
         from tests._shell_harness import FakeSource, _SyncPool
         for kind, route in (
-                ("person", {"kind": "person", "server": "srv1",
-                            "person_id": "p1", "title": "Someone"}),
                 ("list", {"kind": "list", "server": "srv1",
                           "title": "Favourites",
-                          "list": {"type": "favorites"}})):
+                          "list": {"type": "favorites"}}),):
             with self.subTest(route=kind):
                 src = FakeSource()
                 b = MpvtkBrowser(app=None, source=src)

@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-10-24 02:13-0400\n"
-"PO-Revision-Date: 2026-10-25 11:49+0000\n"
+"PO-Revision-Date: 2026-10-29 15:41+0000\n"
 "Last-Translator: INOUE Daisuke <inoue.daisuke@gmail.com>\n"
 "Language-Team: Japanese <https://translate.jellyfin.org/projects/jellyfin/"
 "jellyfin-mpv-shim/ja/>\n"
@@ -31,7 +31,7 @@ msgstr "不明なフォーマット"
 #: jellyfin_mpv_shim/mpvtk_browser/pages/reader.py
 #, python-format
 msgid "Page %(page)d of %(total)d"
-msgstr "全%(total)dページ中%(page)dページ"
+msgstr "%(page)d ページ / 全 %(total)d ページ"
 
 #. Position in a book whose length is unknown, so no total can be given. %d
 #. is the page number.
@@ -45,14 +45,14 @@ msgstr "%dページ"
 #: jellyfin_mpv_shim/books.py
 #, python-format
 msgid "%d%% read"
-msgstr "%d%%読書済"
+msgstr "%d%% 読了"
 
 #. Heading of the on-screen report drawn over the video while audio and
 #. subtitle tracks are being set for every episode of a series. The lines
 #. below it are appended as each episode is done.
 #: jellyfin_mpv_shim/bulk_subtitle.py
 msgid "Selecting Tracks..."
-msgstr "トラックを選択する..."
+msgstr "トラックを選択中..."
 
 #. One line of the bulk track-selection report. {0} is an episode's name;
 #. the episode has no subtitle track to pick.
@@ -81,7 +81,7 @@ msgstr "字幕設定: {0} OK, {1} 失敗"
 #: jellyfin_mpv_shim/bulk_subtitle.py
 #, python-brace-format
 msgid "Set Dubbed: {0} ok, {1} audio only, {2} fail"
-msgstr "ダブ設定: {0} OK, {1} オーディオのみ, {2} 失敗"
+msgstr "ダブ設定: {0} OK, {1} 音声のみ, {2} 失敗"
 
 #. Final line of the bulk track-selection report after choosing tracks by
 #. index. {0} and {1} are counts of episodes.
@@ -120,12 +120,12 @@ msgstr "既存のすべてのアカウントを初期化しています。"
 #. Printed in the terminal after a server was signed in to.
 #: jellyfin_mpv_shim/clients.py
 msgid "Successfully added server."
-msgstr "サーバーを正常に追加しました。"
+msgstr "サーバーを追加しました。"
 
 #. Printed in the terminal when signing in to a server failed.
 #: jellyfin_mpv_shim/clients.py
 msgid "Adding server failed."
-msgstr "サーバーの追加が失敗しました。"
+msgstr "サーバーの追加に失敗しました。"
 
 #. Printed in the terminal when the server being added is one already
 #. saved, so its saved login is replaced.
@@ -136,7 +136,7 @@ msgstr "アカウントはすでに登録されています。認証情報を更
 #. Printed in the terminal after a saved login was replaced.
 #: jellyfin_mpv_shim/clients.py
 msgid "Successfully updated server credentials."
-msgstr "サーバーの資格情報が更新されました。"
+msgstr "サーバーの資格情報を更新しました。"
 
 #. Printed in the terminal when replacing a saved login failed.
 #: jellyfin_mpv_shim/clients.py
@@ -192,7 +192,7 @@ msgstr "クレジットをスキップ"
 #. past. Past tense.
 #: jellyfin_mpv_shim/media.py
 msgid "Skipped Credits"
-msgstr "アウトロをスキップしました"
+msgstr "クレジットをスキップしました"
 
 #. Prompt drawn over the video offering to jump past the closing credits,
 #. shown when the viewer seeks into them.
@@ -370,13 +370,13 @@ msgstr "極大"
 #. pressing M during playback.
 #: jellyfin_mpv_shim/menu.py
 msgid "Main Menu"
-msgstr "メイン・メニュー"
+msgstr "メインメニュー"
 
 #. Entry on the in-player menu that opens the audio track chooser. An
 #. imperative verb.
 #: jellyfin_mpv_shim/menu.py
 msgid "Change Audio"
-msgstr "オーディオトラックの変更"
+msgstr "音声トラックの変更"
 
 #. Entry on the in-player menu that opens the subtitle track chooser. An
 #. imperative verb.
@@ -390,7 +390,7 @@ msgstr "字幕の変更"
 #: jellyfin_mpv_shim/menu.py jellyfin_mpv_shim/mpvtk_browser/hud.py
 #: jellyfin_mpv_shim/osc_bridge.py
 msgid "Change Video Quality"
-msgstr "動画品質の変更"
+msgstr "映像品質の変更"
 
 #. The Jellyfin feature for watching in sync with other people. Used as a
 #. dialog title, a navigation button, and the heading of the group list.
@@ -445,7 +445,7 @@ msgstr "動画再生プロファイル"
 #. as-is.
 #: jellyfin_mpv_shim/menu.py
 msgid "SVP Settings"
-msgstr "SVP設定"
+msgstr "SVP 設定"
 
 #. Entry on the in-player menu, and the title of the submenu it opens,
 #. holding subtitle and transcoding options.
@@ -467,12 +467,12 @@ msgstr "メニューを閉じる"
 #. Title of the in-player submenu listing the item's audio tracks.
 #: jellyfin_mpv_shim/menu.py
 msgid "Select Audio Track"
-msgstr "音声の選択"
+msgstr "音声トラックの選択"
 
 #. Title of the in-player submenu listing the item's subtitle tracks.
 #: jellyfin_mpv_shim/menu.py
 msgid "Select Subtitle Track"
-msgstr "字幕の選択"
+msgstr "字幕トラックの選択"
 
 #. Entry at the top of a subtitle or audio track list, meaning no track at
 #. all. Used on the in-player menu and in the browser's track pickers. It
@@ -527,7 +527,7 @@ msgstr "日本語音声と英語字幕"
 #. order their tracks the same way.
 #: jellyfin_mpv_shim/menu.py
 msgid "Manual by Track Index (Less Reliable)"
-msgstr "トラックインデックスによる手動設定(あまり好ましくない)"
+msgstr "トラックインデックスによる手動設定 ( 信頼性に欠ける )"
 
 # seeded from jellyfin-web: Never
 #. Choice shared by the "Tell Me About Updates", "Window Buttons in the Top
@@ -689,12 +689,12 @@ msgstr "メディアキー探索"
 #. abbreviates "preference".
 #: jellyfin_mpv_shim/menu.py
 msgid "Use Web Seek Pref"
-msgstr "Web探索の設定を使用"
+msgstr "Web でのシーク設定を使用"
 
 #. Toggle on the in-player Player Preferences menu.
 #: jellyfin_mpv_shim/menu.py
 msgid "Write Logs to File"
-msgstr "ファイルにログを書き込む"
+msgstr "ログをファイルに書き込む"
 
 #. Toggle on the in-player Player Preferences menu: look for a newer
 #. release of this application.
@@ -707,7 +707,7 @@ msgstr "更新を確認する"
 #. name; leave it as Discord does in this language.
 #: jellyfin_mpv_shim/menu.py
 msgid "Discord Rich Presence"
-msgstr "Discordのアクティビティステータス"
+msgstr "Discord リッチプレゼンス"
 
 #. What to do when an episode's opening titles start: Never, Ask or Always.
 #. A toggle on the in-player Player Preferences menu and a dropdown under
@@ -1752,7 +1752,7 @@ msgstr "DV レベル"
 #. server; several languages keep them as-is.
 #: jellyfin_mpv_shim/mpvtk_browser/components/media_info.py
 msgid "DV rpu preset flag"
-msgstr "Dolby VisionのRPUプリセットのフラグ"
+msgstr "Dobly Vision RPU プリセットフラグ"
 
 # seeded from jellyfin-web: MediaInfoElPresentFlag
 #. Row label in the Media Info panel: whether the Dolby Vision enhancement
