@@ -24,6 +24,7 @@ from types import SimpleNamespace as NS
 sys.argv = [sys.argv[0]]      # importing the shim reaches args.get_args()
 
 from jellyfin_mpv_shim.mpvtk.widgets import Text  # noqa: E402
+from jellyfin_mpv_shim.mpvtk_browser import theme  # noqa: E402
 from jellyfin_mpv_shim.mpvtk_browser.app import MpvtkBrowser  # noqa: E402
 from jellyfin_mpv_shim.mpvtk_browser.components import (  # noqa: E402
     detail as detail_components)
@@ -159,6 +160,75 @@ class TheDetailsTest(unittest.TestCase):
         lines = self.lines(PremiereDate=None, ProductionLocations=None,
                            EndDate="2020-01-02T00:00:00Z")
         self.assertEqual(lines, ["Died: 1/2/2020"])
+
+
+class ThePortraitCornersTest(unittest.TestCase):
+    """The tiles' shape follows the theme (``rounded``); a bare portrait
+    beside them has to as well."""
+
+    def drawn(self, theme_name):
+        """The portrait bitmap the page hands to the strip store, as pixels."""
+        old = (theme.active() or {}).get("name") or "default"
+        try:
+            b = with_portrait(browser(has_poster=True))
+            # After the browser: constructing one applies the configured theme.
+            theme.apply(theme_name)
+            seen = []
+            real = b.tiles.art.strips.bitmap
+
+            def spy(key, image, lsize=None):
+                seen.append((key, image() if callable(image) else image))
+                return real(key, image, lsize=lsize)
+
+            b.tiles.art.strips.bitmap = spy
+            build_scene(b, (1280, 1080))     # asks; the image lands
+            del seen[:]
+            build_scene(b, (1280, 1080))
+            return [pair for pair in seen if pair[1].width > 100]
+        finally:
+            theme.apply(old)
+
+    def test_a_rounded_theme_cuts_the_corners(self):
+        (key, img), = self.drawn("nebula")
+        rgba = img.convert("RGBA")
+        self.assertEqual(rgba.getpixel((0, 0))[3], 0, "top-left is square")
+        self.assertEqual(rgba.getpixel((rgba.width - 1, rgba.height - 1))[3],
+                         0, "bottom-right is square")
+        self.assertEqual(
+            rgba.getpixel((rgba.width // 2, rgba.height // 2))[3], 255)
+
+    def test_the_edges_between_the_corners_stay_opaque(self):
+        (key, img), = self.drawn("nebula")
+        rgba = img.convert("RGBA")
+        self.assertEqual(rgba.getpixel((rgba.width // 2, 0))[3], 255)
+        self.assertEqual(rgba.getpixel((0, rgba.height // 2))[3], 255)
+
+    def test_a_square_theme_leaves_the_portrait_square(self):
+        (key, img), = self.drawn("default")
+        self.assertEqual(img.convert("RGBA").getpixel((0, 0))[3], 255)
+
+    def test_the_two_shapes_are_cached_apart(self):
+        (round_key, _), = self.drawn("nebula")
+        (square_key, _), = self.drawn("default")
+        self.assertNotEqual(round_key, square_key)
+
+    def test_a_tile_less_art_cell_is_not_rounded_unless_asked(self):
+        """art_cell is also the track list's and the guide's cell; only the
+        caller that says so gets the shape."""
+        try:
+            b = with_portrait(browser(has_poster=True))
+            theme.apply("nebula")
+            seen = []
+            real = b.tiles.art.strips.bitmap
+            b.tiles.art.strips.bitmap = lambda key, image, lsize=None: (
+                seen.append(key), real(key, image, lsize=lsize))[1]
+            cell = {"Id": "p1", "ImageTags": {"Primary": "t"}}
+            b.tiles.art_cell(cell, 300)
+            b.tiles.art_cell(cell, 300)
+        finally:
+            theme.apply("default")
+        self.assertTrue(seen)
+        self.assertFalse(any(k.endswith(":rc") for k in seen))
 
 
 class _RecordingApi:
@@ -306,8 +376,8 @@ class ThePageTest(unittest.TestCase):
             b.tiles.art.server = "srv1"
             asked = []
             real = b.tiles.art_cell
-            b.tiles.art_cell = lambda item, size=28: (
-                asked.append((item.get("Id"), size)), real(item, size))[1]
+            b.tiles.art_cell = lambda item, size=28, **kw: (
+                asked.append((item.get("Id"), size)), real(item, size, **kw))[1]
             build_scene(b, WIDE)
         finally:
             settings.detail_poster = old
@@ -353,8 +423,8 @@ class ThePageTest(unittest.TestCase):
         b.tiles.art.server = "srv1"
         heights = set()
         real = b.tiles.art_cell
-        b.tiles.art_cell = lambda item, size=28: (
-            heights.add(size), real(item, size))[1]
+        b.tiles.art_cell = lambda item, size=28, **kw: (
+            heights.add(size), real(item, size, **kw))[1]
         for h in range(600, 1200, 7):
             build_scene(b, (1280, h))
         self.assertLessEqual(len(heights), 5)

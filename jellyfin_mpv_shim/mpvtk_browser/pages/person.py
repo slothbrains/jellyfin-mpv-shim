@@ -130,5 +130,4 @@ class PersonPage(Page):
         if not (item.get("ImageTags") or {}).get("Primary"):
             item = dict(item, ImageTags=dict(item.get("ImageTags") or {},
                                              Primary=self.UNTAGGED))
-        node = tiles.art_cell(item, height)
-        return node
+        return tiles.art_cell(item, height, rounded=True)
