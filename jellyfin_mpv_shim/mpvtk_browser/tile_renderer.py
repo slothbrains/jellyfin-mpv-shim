@@ -715,7 +715,7 @@ class TileRenderer:
         return (self._request_image(key, url, (w, h), cover=not contain),
                 key, contain)
 
-    def art_cell(self, item, size=28):
+    def art_cell(self, item, size=28, rounded=False):
         """Small square album-art bitmap for a table cell (track lists);
         a placeholder box while it loads or when the item has none.
         Each cell is its own overlay, so only use in virtualized or
@@ -750,6 +750,16 @@ class TileRenderer:
                 # art cell today; keeping them apart costs one character and
                 # means nothing has to.
                 key = key + ":l" if live else key
+                if rounded and (theme.active() or {}).get("rounded"):
+                    # The tiles' shape, for art that is not in a tile: a
+                    # "rounded" theme draws every card with rounded corners
+                    # (StripStore._paint_poster) and a bare picture beside
+                    # them reads as the odd one out. Keyed apart, so a
+                    # theme switch does not serve the square one. Deferred:
+                    # this runs on most frames and is drawn on the first.
+                    key += ":rc"
+                    plated = img
+                    img = (lambda: self._rounded(plated, px(14)))
                 # No lsize: this is decoded artwork, not a canvas we sized.
                 # The server preserves aspect, so a "square" request comes
                 # back e.g. 56x52 and the logical footprint is whatever the
@@ -759,6 +769,19 @@ class TileRenderer:
                 return Image(b["src"], b["iw"], b["ih"], v=b.get("v", 0),
                              w=b["lw"], h=b["lh"])
         return self._art_placeholder(size, item)
+    @staticmethod
+    def _rounded(img, radius):
+        """``img`` with its corners cut to ``radius`` (physical px), through
+        the same antialiased mask the strips use for their badges."""
+        from PIL import ImageChops
+
+        from .strips import _aa_mask
+
+        out = img.convert("RGBA")
+        mask = _aa_mask(out.width, out.height, radius)
+        out.putalpha(ImageChops.multiply(out.getchannel("A"), mask))
+        return out
+
     @staticmethod
     def _plated(img, live=False):
         """``img``, given the backing transparent artwork should sit on.
