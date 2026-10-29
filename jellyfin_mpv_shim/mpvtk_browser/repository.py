@@ -208,6 +208,12 @@ DETAIL_FIELDS = (
     "SpecialFeatureCount,LocalTrailerCount,RemoteTrailers"
 )
 
+#: A person's own page. Overview, ExternalUrls and ProductionLocations are all
+#: gated on `Fields` by the DTO builder, and ProductionLocations is the one
+#: the detail query leaves out -- it is the person's birth place.
+PERSON_FIELDS = ("Overview,ProviderIds,ExternalUrls,ProductionLocations,"
+                 "PrimaryImageAspectRatio")
+
 # CollectionTypes we do not surface (video-only browser, phase 1). Playlists
 # ARE surfaced (as a normal library tile): Jellyfin lets a playlist's declared
 # type and its contents diverge, so we can't classify a playlist as music/video
@@ -2092,12 +2098,26 @@ class LibrarySource:
             **self._filter_kwargs(filters)) or {}
         return result.get("Items", []), result.get("TotalRecordCount", 0)
 
+    def get_person(self, server_uuid, person_id):
+        """The person themselves: portrait, biography, birth and death
+        dates, birth place, provider links."""
+        api = self._conn(server_uuid).api
+        return api.get_item(person_id, fields=PERSON_FIELDS)
+
     def get_person_items(self, server_uuid, person_id, start_index=0, limit=100,
-                         sort_by="SortName", sort_order="Ascending"):
-        """A person's filmography (movies + series they appear in)."""
+                         sort_by="SortName", sort_order="Ascending",
+                         include_item_types="Movie,Series"):
+        """A person's filmography (movies + series they appear in).
+
+        ``include_item_types`` splits it: the person page asks for movies
+        and for series separately so each row is its own query with its own
+        total, rather than one list cut apart client-side after a page of
+        it has been read.
+        """
         api = self._conn(server_uuid).api
         result = api.get_items_by_person(
             person_id,
+            include_item_types=include_item_types,
             sort_by=sort_by,
             sort_order=sort_order,
             start_index=start_index,
@@ -3554,8 +3574,13 @@ class OfflineLibrarySource:
         items = sorted(items, key=lambda i: (i.get("Name") or "").lower())
         return items[start_index:start_index + limit], len(items)
 
+    def get_person(self, server_uuid, person_id):
+        # People aren't cached offline either.
+        return None
+
     def get_person_items(self, server_uuid, person_id, start_index=0, limit=100,
-                         sort_by="SortName", sort_order="Ascending"):
+                         sort_by="SortName", sort_order="Ascending",
+                         include_item_types="Movie,Series"):
         # People aren't cached offline; the person page simply comes up empty.
         return [], 0
 

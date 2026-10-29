@@ -371,13 +371,31 @@ class FakeSource:
         self.extras_calls.append(item_id)
         return list(getattr(self, "special_features", {}).get(item_id, []))
 
+    def get_person(self, server_uuid, person_id):
+        """``self.people`` (id -> DTO) when a test sets it, else a bare
+        Person. A real one carries Overview, PremiereDate, EndDate,
+        ProductionLocations and ExternalUrls -- those are what the page's
+        tests are about, so they are set per test rather than invented."""
+        self.person_calls = getattr(self, "person_calls", [])
+        self.person_calls.append(person_id)
+        people = getattr(self, "people", {})
+        return people.get(person_id, {"Id": person_id, "Name": "Actor",
+                                      "Type": "Person"})
+
     def get_person_items(self, server_uuid, person_id, start_index=0, **kw):
-        # Record the sort the caller asked for: the repository has always
-        # accepted sort_by/sort_order and _load_person never passed them.
-        self.person_sorts = getattr(self, "person_sorts", [])
-        self.person_sorts.append((kw.get("sort_by"), kw.get("sort_order")))
-        items = [{"Id": "pf%d" % i, "Name": "Film %d" % i, "Type": "Movie"}
-                 for i in range(4)]
+        # Record what the caller asked for, one entry per query: the person
+        # page makes one for movies and one for series.
+        self.person_queries = getattr(self, "person_queries", [])
+        self.person_queries.append((kw.get("include_item_types"),
+                                    kw.get("sort_by"), kw.get("sort_order")))
+        kind = kw.get("include_item_types") or "Movie,Series"
+        items = []
+        if "Movie" in kind:
+            items += [{"Id": "pf%d" % i, "Name": "Film %d" % i,
+                       "Type": "Movie"} for i in range(4)]
+        if "Series" in kind:
+            items += [{"Id": "ps%d" % i, "Name": "Show %d" % i,
+                       "Type": "Series"} for i in range(2)]
         return items[start_index:start_index + 20], len(items)
 
     def get_next_up(self, server_uuid, series_id):

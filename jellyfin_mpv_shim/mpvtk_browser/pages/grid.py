@@ -1,11 +1,9 @@
-"""A library grid, and a person's filmography.
+"""A library grid, and the listings built on it.
 
-Two route kinds, one page class. They share a renderer and differ only in
-where their items come from and which header controls make sense, so
-``PersonPage`` is a three-line subclass rather than a copy — which is what
-the ``ROUTES`` table could not express (``"person": ("_load_person",
-"_render_grid")`` pointed two kinds at one method and left the differences
-as ``route["kind"] ==`` checks inside it).
+``ListPage`` is a subclass rather than a copy: it shares the renderer and
+differs only in where its items come from and which header controls make
+sense. (A person's page used to be a third; it is a page of its own now --
+see ``pages/person.py``.)
 
 Everything here was private to these two routes: the sort and filter bars,
 the paged-grid layout, the infinite-scroll fetcher, the reload-on-change
@@ -1464,7 +1462,7 @@ class ListPage(GridPage):
     rather than one per section because they differ only in the query:
     the grid, the paging, the sort and the shape are the same screen.
 
-    A ``GridPage`` subclass for that reason, exactly as ``PersonPage`` is.
+    A ``GridPage`` subclass for that reason.
     What it replaces is ``parent_id`` -- a list is defined by a *predicate*
     (this genre, this studio, favourites, still-to-air films) rather than by
     a folder, which is the one thing the grid could not express.
@@ -1562,50 +1560,3 @@ class ListPage(GridPage):
                 Text(_("%d items") % (self.route.get("_total") or 0),
                      size="caption", color=theme.SUBTLE_FG))
         return header
-
-
-class PersonPage(GridPage):
-    """A person's filmography. Same grid, different source and header.
-
-    Sort only: genre/year/letter filters make no sense over one person's
-    credits, but "newest first" very much does. That distinction used to be
-    a ``route["kind"] == "person"`` branch inside the shared renderer.
-    """
-
-    kind = "person"
-
-    HEAD_H = 40 + 46
-
-    def load(self, epoch):
-        route = self.route
-        source = self.ctx.source
-        srv = route.get("server") or self.ctx.server
-        # The repository has taken sort_by/sort_order since it was written;
-        # this was the one caller that never passed them, so the dropdown had
-        # nowhere to land.
-        _label, sort_by, sort_order = self._sorts()[route.get("_sort", 0)]
-
-        def work():
-            return source.get_person_items(
-                srv, route["person_id"],
-                sort_by=sort_by, sort_order=sort_order)
-
-        def done(res):
-            items, total = res
-            # Random reshuffles server-side per request, so paging it yields
-            # duplicates and skips. Cap at the first page, as the grid does
-            # and as Tk did — the cap lived only in the grid loader, so the
-            # filmography had the corruption the cap exists to prevent.
-            total = len(items) if sort_by == "Random" else total
-            route["_total"] = total
-            # Padded for the same reason ListPage is: this route is windowed
-            # by the inherited render, so an unpadded list resizes the
-            # scroller under the thumb as each window lands.
-            route["_items"] = pagination.spread([], total, items, 0)
-
-        self.route_async(work, done, epoch)
-
-    def _header(self, items, width=0):
-        return [Text(self.route.get("title", ""), size="page", bold=True),
-                self._sort_bar()]
-

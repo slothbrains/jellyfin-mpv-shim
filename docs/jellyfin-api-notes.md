@@ -153,6 +153,12 @@ rather than as errors when you forget:
 - **`ExternalUrls`** is absent from list queries unless asked for (measured on
   10.11 and 12.0). The single-item routes fill it in unconditionally; list
   routes do not.
+- **`ProductionLocations`** is the one a person's page needs and the detail
+  query does not name: for a Person it is the **birth place**, and the DTO
+  builder emits it only when `ItemFields.ProductionLocations` is requested
+  (`DtoService.cs`). `PremiereDate` (born) and `EndDate` (died) are not gated.
+  `LibrarySource.get_person` asks for `PERSON_FIELDS`; jellyfin-web shows only
+  the first entry.
 - **`PrimaryImageAspectRatio`**, which is what row shape is resolved from.
 
 And two that arrive without being asked:

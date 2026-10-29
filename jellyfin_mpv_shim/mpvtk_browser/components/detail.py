@@ -10,7 +10,7 @@ See ``docs/archive/ARCHITECTURE_TARGET.md`` §1.4 for the line being drawn.
 import logging
 
 from ...extras import is_extra
-from ...i18n import _
+from ...i18n import _, _p
 from ...mpvtk.widgets import Menu
 from . import controls
 from .labels import is_watched
@@ -60,6 +60,70 @@ def meta_line(item):
     if genres:
         parts.append(genres)
     return "   ·   ".join(parts)
+
+
+def _birth_date(text):
+    """A ``datetime.date`` from a server timestamp, or None.
+
+    The first ten characters and nothing else: a person's birthday is a
+    calendar date the server stores as midnight UTC, and running it through
+    a timezone shows the day before to everyone west of Greenwich.
+    """
+    import datetime
+
+    try:
+        return datetime.date.fromisoformat(str(text)[:10])
+    except ValueError:
+        return None
+
+
+def _date_text(day):
+    # One message, so a language that writes the day first can say so. Braces
+    # rather than %s for the reason timefmt.clock gives.
+    return _p("date of birth or death", "{month}/{day}/{year}").format(
+        month=day.month, day=day.day, year=day.year)
+
+
+def _years_between(start, end):
+    return end.year - start.year - ((end.month, end.day)
+                                    < (start.month, start.day))
+
+
+def person_lines(item, today=None):
+    """The born / died / birth place lines of a person's header, in order.
+
+    jellyfin-web's rules (itemDetails/index.js): the age after the birth
+    date only while the person is alive; once there is a death date the age
+    moves to it and is the age they died at. Each line is left out when the
+    server has nothing for it, and a date it cannot read is the same as no
+    date -- a header with "Born: " and nothing after it is worse than none.
+
+    ``ProductionLocations`` is the birth place for a Person, first entry
+    only, as in web.
+    """
+    import datetime
+
+    today = today or datetime.date.today()
+    born = _birth_date(item.get("PremiereDate")) \
+        if item.get("PremiereDate") else None
+    died = _birth_date(item.get("EndDate")) if item.get("EndDate") else None
+    lines = []
+    if born:
+        if died or born > today:
+            lines.append(_("Born: {date}").format(date=_date_text(born)))
+        else:
+            lines.append(_("Born: {date} ({age} years old)").format(
+                date=_date_text(born), age=_years_between(born, today)))
+    if died:
+        if born and born <= died:
+            lines.append(_("Died: {date} ({age} years old)").format(
+                date=_date_text(died), age=_years_between(born, died)))
+        else:
+            lines.append(_("Died: {date}").format(date=_date_text(died)))
+    places = [p for p in (item.get("ProductionLocations") or ()) if p]
+    if places:
+        lines.append(_("Birth place: {place}").format(place=places[0]))
+    return lines
 
 
 def people_row(tiles, people):
